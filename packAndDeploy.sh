@@ -48,8 +48,11 @@ genDeployPack()
         if [ -z ${dst} ]; then
             dst=${segments[1]}
         fi
+        dstParent=$(dirname ${dst})
 
         cp -r ${src} ${temp}/${srcBaseName}
+        echo "mkdir -p ${dstParent}" >> ${deployTool}
+        echo "rm -rf ${dst}" >> ${deployTool}
         echo "cp -rf ${srcBaseName} ${dst}" >> ${deployTool}
     done < ${taskPath}
     echo "rm -rf ${dirName} ${tarName}" >> ${deployTool}
@@ -60,11 +63,13 @@ calcOff()
 {
     if [ "${system}" == "Darwin" ]; then
         fileSize=$(stat -f "%z" ${deployTool})
+        fileSizeWithLen=$(expr ${fileSize} + ${#fileSize} + 1)  # +1因为tail计数从1开始
+        sed -i "" "s/tail -c +/tail -c +${fileSizeWithLen}/g" ${deployTool}
     else
         fileSize=$(stat -c "%s" ${deployTool})
+        fileSizeWithLen=$(expr ${fileSize} + ${#fileSize} + 1)  # +1因为tail计数从1开始
+        sed -i "s/tail -c +/tail -c +${fileSizeWithLen}/g" ${deployTool}
     fi
-    fileSizeWithLen=$(expr ${fileSize} + ${#fileSize} + 1)  # +1因为tail计数从1开始
-    sed -i "" "s/tail -c +/tail -c +${fileSizeWithLen}/g" ${deployTool}
 }
 
 finish()
